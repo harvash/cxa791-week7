@@ -75,7 +75,7 @@ podTemplate(yaml: '''
 )  {
   node(POD_LABEL) {
     stage('Run pipeline against a gradle project') {
-      git branch: env.BRANCH_NAME, url:'https://github.com/harvash/cxa791-week_6.git'
+      git branch: env.BRANCH_NAME, url:'https://github.com/harvash/cxa791-week7.git'
       container('gradle') {
         stage('Build a gradle project') {
           
