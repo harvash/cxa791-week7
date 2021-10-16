@@ -68,13 +68,13 @@ podTemplate(yaml: '''
           sh '''cd Chapter08/sample1
                 chmod +x gradlew '''
           
-          if (env.BRANCH_NAME == 'main') {
+          if (env.BRANCH_NAME == 'master') {
             sh '''cd Chapter08/sample1
                   ./gradlew test''' 
           }
         }
         stage('Code coverage') {
-          if (env.BRANCH_NAME == 'main') {
+          if (env.BRANCH_NAME == 'master') {
             sh '''pwd
                   cd Chapter08/sample1
                   ./gradlew jacocoTestCoverageVerification
@@ -93,14 +93,14 @@ podTemplate(yaml: '''
             try {
               sh '''pwd
                     cd Chapter08/sample1
-                    ./gradlew checkstyleMain'''
+                    ./gradlew checkstylemaster'''
             } catch(all) {
                 echo "checkstyle fails"
             }
             publishHTML (
               target: [
                 reportDir: 'Chapter08/sample1/build/reports/checkstyle',
-                reportFiles: 'main.html',
+                reportFiles: 'master.html',
                 reportName: 'CheckStyle Report'
               ]
             )
@@ -131,7 +131,7 @@ podTemplate(yaml: '''
     stage('Build Java Image') {
       container('kaniko') {
         stage('Build a gradle project') {
-          if (env.BRANCH_NAME == 'feature' || env.BRANCH_NAME == 'main') {
+          if (env.BRANCH_NAME == 'feature' || env.BRANCH_NAME == 'master') {
             sh """echo 'FROM openjdk:8-jre' > Dockerfile
                   echo 'COPY ./calculator_${env.BRANCH_NAME}.jar app.jar' >> Dockerfile
                   echo 'ENTRYPOINT ["java", "-jar", "app.jar"]' >> Dockerfile
@@ -140,7 +140,7 @@ podTemplate(yaml: '''
                   cp /mnt/calculator_${env.BRANCH_NAME}.jar .
                   pwd
                   ls -al
-                  if ["${env.BRANCH_NAME}" == "main" ]; then
+                  if ["${env.BRANCH_NAME}" == "master" ]; then
                     /kaniko/executor --context `pwd` --destination harvash/calculator:1.0
                   else
                     /kaniko/executor --context `pwd` --destination harvash/calculator-feature:0.1
