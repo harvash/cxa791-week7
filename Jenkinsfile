@@ -9,6 +9,13 @@ podTemplate(yaml: '''
       - sleep
       args:
       - 99d
+      resources:
+        limits:
+          cpu: 500m
+          memory: 500M
+        requests:
+          cpu: 100m
+          memory: 256M
       volumeMounts:
       - name: shared-storage
         mountPath: /mnt
@@ -23,6 +30,13 @@ podTemplate(yaml: '''
         mountPath: /mnt
       - name: kaniko-secret
         mountPath: /kaniko/.docker
+      resources:
+        limits:
+          cpu: 500m
+          memory: 500M
+        requests:
+          cpu: 100m
+          memory: 256M
     - name: calculator-feature
       image: harvash/calculator:0.1
       imagePullPolicy: Always
@@ -31,10 +45,10 @@ podTemplate(yaml: '''
       resources:
         limits:
           cpu: 500m
-          memory: 500Mi
+          memory: 500M
         requests:
           cpu: 100m
-          memory: 256Mi
+          memory: 256M
     - name: calculator-master
       image: harvash/calculator:1.0
       imagePullPolicy: Always
