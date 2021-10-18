@@ -14,36 +14,36 @@ pipeline {
         }
         stage ('Run tests for master branch') { 
           when { branch: master }
-          steps { 
-            container('gradle') {
-              sh '''cd Chapter08/sample1
-                    chmod +x gradlew      
-                    ./gradlew test
-                    ./gradlew jacocoTestCoverageVerification
-                    ./gradlew jacocoTestReport
-                    ./gradlew checkstylemaster
-                ''' 
-              publishHTML (
-                target: [
-                  reportDir: 'Chapter08/sample1/build/reports/jacoco/test/html',
-                  reportFiles: 'index.html',
-                  reportName: 'JaCoCo Report'
-                ]
-              )
-              publishHTML (
-                target: [
-                  reportDir: 'Chapter08/sample1/build/reports/checkstyle',
-                  reportFiles: 'master.html',
-                  reportName: 'CheckStyle Report'
-                ]
-              )
-              try {
-                sh '''./gradlew test'''
-              } catch(all) {
-                  echo "Unit tests fail"
+            steps { 
+              container('gradle') {
+                sh '''cd Chapter08/sample1
+                      chmod +x gradlew      
+                      ./gradlew test
+                      ./gradlew jacocoTestCoverageVerification
+                      ./gradlew jacocoTestReport
+                      ./gradlew checkstylemaster
+                  ''' 
+                publishHTML (
+                  target: [
+                    reportDir: 'Chapter08/sample1/build/reports/jacoco/test/html',
+                    reportFiles: 'index.html',
+                    reportName: 'JaCoCo Report'
+                  ]
+                )
+                publishHTML (
+                  target: [
+                    reportDir: 'Chapter08/sample1/build/reports/checkstyle',
+                    reportFiles: 'master.html',
+                    reportName: 'CheckStyle Report'
+                  ]
+                )
+                try {
+                  sh '''./gradlew test'''
+                } catch(all) {
+                    echo "Unit tests fail"
+                }
               }
             }
-          }
         }
         stage('Build jar') {
           steps {
@@ -58,36 +58,38 @@ pipeline {
       }      
     }
     stage('create container image and push to docker hub') {
-      stage('Operations for master branch'){
-        when {branch: master}
-        steps{
-          sh """
-              echo 'FROM openjdk:8-jre' > Dockerfile
-              echo 'COPY ./calculator_${env.BRANCH_NAME}.jar app.jar' >> Dockerfile
-              echo 'ENTRYPOINT ["java", "-jar", "app.jar"]' >> Dockerfile
-              cat Dockerfile
+      steps {
+        stage('Operations for master branch'){
+          when {branch: master}
+          steps{
+            sh """
+                echo 'FROM openjdk:8-jre' > Dockerfile
+                echo 'COPY ./calculator_${env.BRANCH_NAME}.jar app.jar' >> Dockerfile
+                echo 'ENTRYPOINT ["java", "-jar", "app.jar"]' >> Dockerfile
+                cat Dockerfile
 
-              cp /mnt/calculator_${env.BRANCH_NAME}.jar .
-              pwd
-              ls -l
-              /kaniko/executor --context `pwd` --destination harvash/calculator:1.0
-            """
+                cp /mnt/calculator_${env.BRANCH_NAME}.jar .
+                pwd
+                ls -l
+                /kaniko/executor --context `pwd` --destination harvash/calculator:1.0
+              """
+          }
         }
-      }
-      stage('Operations for feature branch'){
-        when {branch: feature}
-        steps{
-          sh """
-              echo 'FROM openjdk:8-jre' > Dockerfile
-              echo 'COPY ./calculator_${env.BRANCH_NAME}.jar app.jar' >> Dockerfile
-              echo 'ENTRYPOINT ["java", "-jar", "app.jar"]' >> Dockerfile
-              cat Dockerfile
+        stage('Operations for feature branch'){
+          when {branch: feature}
+          steps{
+            sh """
+                echo 'FROM openjdk:8-jre' > Dockerfile
+                echo 'COPY ./calculator_${env.BRANCH_NAME}.jar app.jar' >> Dockerfile
+                echo 'ENTRYPOINT ["java", "-jar", "app.jar"]' >> Dockerfile
+                cat Dockerfile
 
-              cp /mnt/calculator_${env.BRANCH_NAME}.jar .
-              pwd
-              ls -l
-              /kaniko/executor --context `pwd` --destination harvash/calculator:0.1
-            """
+                cp /mnt/calculator_${env.BRANCH_NAME}.jar .
+                pwd
+                ls -l
+                /kaniko/executor --context `pwd` --destination harvash/calculator:0.1
+              """
+          }
         }
       }
     }
