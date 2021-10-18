@@ -44,6 +44,7 @@ pipeline {
         stage('Build jar') {
           steps {
           sh """
+                cd Chapter08/sample1
                 ./gradlew build
                 ls -l ./build/libs
                 mv ./build/libs/calulator-0.0.1-SNAPSHOT.jar /mnt/calculator_${env.BRANCH_NAME}.jar
