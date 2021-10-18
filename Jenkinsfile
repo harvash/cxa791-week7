@@ -25,14 +25,14 @@ pipeline {
                 ''' 
               publishHTML (
                 target: [
-                  reportDir: 'Chapter08/sample1/build/reports/jacoco/test/html',
+                  reportDir: 'Chapter08/sample1/build/reports/jacoco/test/html/',
                   reportFiles: 'index.html',
                   reportName: 'JaCoCo Report'
                 ]
               )
               publishHTML (
                 target: [
-                  reportDir: 'Chapter08/sample1/build/reports/checkstyle',
+                  reportDir: 'Chapter08/sample1/build/reports/checkstyle/',
                   reportFiles: 'master.html',
                   reportName: 'CheckStyle Report'
                 ]
