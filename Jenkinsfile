@@ -55,24 +55,37 @@ pipeline {
         }
       }
     }      
-    stage('Push image to Docker Hub'){
-      when {branch: master ; branch: feature}
-      steps {
-        container('kaniko') {
-          sh """echo 'FROM openjdk:8-jre' > Dockerfile
-                echo 'COPY ./calculator_${env.BRANCH_NAME}.jar app.jar' >> Dockerfile
-                echo 'ENTRYPOINT ["java", "-jar", "app.jar"]' >> Dockerfile
-                cat Dockerfile
-                ls -l /mnt
-                cp /mnt/calculator_${env.BRANCH_NAME}.jar .
-                pwd
-                ls -al
-                if ["${env.BRANCH_NAME}" == "master" ]; then
-                  /kaniko/executor --context `pwd` --destination harvash/calculator:1.0
-                else
-                  /kaniko/executor --context `pwd` --destination harvash/calculator-feature:0.1
-                fi
-                """         
+    stage('create container image and push to docker hub') {
+      stage('Operations for master branch'){
+        when {branch: master}
+        steps{
+          sh """
+              echo 'FROM openjdk:8-jre' > Dockerfile
+              echo 'COPY ./calculator_${env.BRANCH_NAME}.jar app.jar' >> Dockerfile
+              echo 'ENTRYPOINT ["java", "-jar", "app.jar"]' >> Dockerfile
+              cat Dockerfile
+
+              cp /mnt/calculator_${env.BRANCH_NAME}.jar .
+              pwd
+              ls -l
+              /kaniko/executor --context `pwd` --destination harvash/calculator:1.0
+            """
+        }
+      }
+      stage('Operations for feature branch'){
+        when {branch: feature}
+        steps{
+          sh """
+              echo 'FROM openjdk:8-jre' > Dockerfile
+              echo 'COPY ./calculator_${env.BRANCH_NAME}.jar app.jar' >> Dockerfile
+              echo 'ENTRYPOINT ["java", "-jar", "app.jar"]' >> Dockerfile
+              cat Dockerfile
+
+              cp /mnt/calculator_${env.BRANCH_NAME}.jar .
+              pwd
+              ls -l
+              /kaniko/executor --context `pwd` --destination harvash/calculator:0.1
+            """
         }
       }
     }
