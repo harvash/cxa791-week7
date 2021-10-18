@@ -11,10 +11,10 @@ spec:
     resources:
       limits:
         cpu: 500m
-        memory: 500M
+        memory: 1000M
       requests:
         cpu: 100m
-        memory: 256M
+        memory: 512M
     volumeMounts:
     - name: shared-storage
       mountPath: /mnt
