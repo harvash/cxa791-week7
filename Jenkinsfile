@@ -21,7 +21,7 @@ pipeline {
                     ./gradlew test
                     ./gradlew jacocoTestCoverageVerification
                     ./gradlew jacocoTestReport
-                    ./gradlew checkstylemaster
+                    ./gradlew checkstyle
                 ''' 
               publishHTML (
                 target: [
