@@ -13,7 +13,7 @@ pipeline {
     stage('Test & Build Java code'){
       stages {
         stage ('Run tests for master branch') { 
-          when { branch: master }
+          when { branch 'master' }
           steps { 
             container('gradle') {
               sh '''cd Chapter08/sample1
@@ -56,7 +56,7 @@ pipeline {
     stage('create container image and push to docker hub') {
       stages {
         stage('Operations for master branch'){
-          when {branch: master}
+          when {branch 'master'}
           steps{
             sh """
                 echo 'FROM openjdk:8-jre' > Dockerfile
@@ -72,7 +72,7 @@ pipeline {
           }
         }
         stage('Operations for feature branch'){
-          when {branch: feature}
+          when {branch 'feature'}
           steps{
             sh """
                 echo 'FROM openjdk:8-jre' > Dockerfile
