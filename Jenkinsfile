@@ -42,7 +42,7 @@ pipeline {
           }
         }
         stage('run operations for feature branch') {
-          when (branch 'feature')
+          when {branch 'feature'}
           steps {
               sh '''cd Chapter08/sample1
                     chmod +x gradlew      
@@ -87,7 +87,7 @@ pipeline {
           }
         }
         stage('Operations for master branch'){
-          when (branch 'master')
+          when {branch 'master'}
           steps{
             container('kaniko') {
               sh  """
@@ -97,7 +97,7 @@ pipeline {
           }
         }
         stage('Operations for feature branch'){
-          when (branch 'feature')
+          when {branch 'feature'}
           steps{
             container('kaniko') {
               sh  """
