@@ -43,14 +43,16 @@ pipeline {
         }
         stage('Build jar') {
           steps {
-          sh """
-                cd Chapter08/sample1
-                ls -l
-                ./gradlew build
-                ls -l ./build/libs
-                mv ./build/libs/calulator-0.0.1-SNAPSHOT.jar /mnt/calculator_${env.BRANCH_NAME}.jar
-                ls -l /mnt
-            """
+            container('gradle') {
+            sh """
+                  cd Chapter08/sample1
+                  ls -l
+                  ./gradlew build
+                  ls -l ./build/libs
+                  mv ./build/libs/calulator-0.0.1-SNAPSHOT.jar /mnt/calculator_${env.BRANCH_NAME}.jar
+                  ls -l /mnt
+              """
+            }
           }
         }
       }
