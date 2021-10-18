@@ -44,14 +44,14 @@ pipeline {
         stage('Build jar') {
           steps {
             container('gradle') {
-            sh """
-                  cd Chapter08/sample1
-                  ls -l
-                  ./gradlew build
-                  ls -l ./build/libs
-                  mv ./build/libs/calculator-0.0.1-SNAPSHOT.jar /mnt/calculator_${env.BRANCH_NAME}.jar                          
-                  ls -l /mnt
-              """
+              sh """
+                    cd Chapter08/sample1
+                    ls -l
+                    ./gradlew build
+                    ls -l ./build/libs
+                    mv ./build/libs/calculator-0.0.1-SNAPSHOT.jar /mnt                       
+                    ls -l /mnt
+                """
             }
           }
         }
@@ -59,36 +59,39 @@ pipeline {
     }  
     stage('create container image and push to docker hub') {
       stages {
-        stage('Operations for master branch'){
-          when {branch 'master'}
+        stage('build Dockerfile'){
           steps{
-            sh """
-                echo 'FROM openjdk:8-jre' > Dockerfile
-                echo 'COPY ./calculator_${env.BRANCH_NAME}.jar app.jar' >> Dockerfile
-                echo 'ENTRYPOINT ["java", "-jar", "app.jar"]' >> Dockerfile
-                cat Dockerfile
-                ls -l /mnt
-                cp /mnt/calculator_${env.BRANCH_NAME}.jar .
-                pwd
-                ls -l
-                /kaniko/executor --context `pwd` --destination harvash/calculator:1.0
-              """
+            container('kaniko') {
+              sh """
+                  echo 'FROM openjdk:8-jre' > Dockerfile
+                  echo 'COPY ./calculator-0.0.1-SNAPSHOT.jar  app.jar' >> Dockerfile
+                  echo 'ENTRYPOINT ["java", "-jar", "app.jar"]' >> Dockerfile
+                  cat Dockerfile
+                  ls -l /mnt
+                  cp /mnt/calculator-0.0.1-SNAPSHOT.jar  .
+                  pwd
+                  ls -l
+                  
+                """
+            }
+          }
+        }
+        stage('Operations for master branch'){
+          steps{
+            container('kaniko') {
+              sh  """
+                  /kaniko/executor --context `pwd` --destination harvash/calculator:1.0
+                  """
+            }
           }
         }
         stage('Operations for feature branch'){
-          when {branch 'feature'}
           steps{
-            sh """
-                echo 'FROM openjdk:8-jre' > Dockerfile
-                echo 'COPY ./calculator_${env.BRANCH_NAME}.jar app.jar' >> Dockerfile
-                echo 'ENTRYPOINT ["java", "-jar", "app.jar"]' >> Dockerfile
-                cat Dockerfile
-
-                cp /mnt/calculator_${env.BRANCH_NAME}.jar .
-                pwd
-                ls -l
-                /kaniko/executor --context `pwd` --destination harvash/calculator:0.1
-              """
+            container('kaniko') {
+              sh  """
+                  /kaniko/executor --context `pwd` --destination harvash/calculator:0.1
+                  """
+            }
           }
         }
       }
