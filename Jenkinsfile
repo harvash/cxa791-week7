@@ -77,6 +77,7 @@ pipeline {
           }
         }
         stage('Operations for master branch'){
+          when (branch 'master')
           steps{
             container('kaniko') {
               sh  """
@@ -86,6 +87,7 @@ pipeline {
           }
         }
         stage('Operations for feature branch'){
+          when (branch 'feature')
           steps{
             container('kaniko') {
               sh  """
