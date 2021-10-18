@@ -56,6 +56,7 @@ pipeline {
             container('gradle') {
               sh """
                     cd Chapter08/sample1
+                    chmod +x gradlew
                     ls -l
                     ./gradlew build
                     ls -l ./build/libs
