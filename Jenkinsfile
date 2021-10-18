@@ -6,55 +6,57 @@ pipeline {
   }
   stages {
     stage('Test & Build Calculator Java') {
-      stage('Checkout SCM') {
-        steps {
-          git branch: env.BRANCH_NAME, url:'https://github.com/harvash/cxa791-week7.git'
+      steps {
+        stage('Checkout SCM') {
+          steps {
+            git branch: env.BRANCH_NAME, url:'https://github.com/harvash/cxa791-week7.git'
+          }
         }
-      }
-      stage ('Run tests for master branch') { 
-        when { branch: master }
-        steps { 
-          container('gradle') {
-            sh '''cd Chapter08/sample1
-                  chmod +x gradlew      
-                  ./gradlew test
-                  ./gradlew jacocoTestCoverageVerification
-                  ./gradlew jacocoTestReport
-                  ./gradlew checkstylemaster
-              ''' 
-            publishHTML (
-              target: [
-                reportDir: 'Chapter08/sample1/build/reports/jacoco/test/html',
-                reportFiles: 'index.html',
-                reportName: 'JaCoCo Report'
-              ]
-            )
-            publishHTML (
-              target: [
-                reportDir: 'Chapter08/sample1/build/reports/checkstyle',
-                reportFiles: 'master.html',
-                reportName: 'CheckStyle Report'
-              ]
-            )
-            try {
-              sh '''./gradlew test'''
-            } catch(all) {
-                echo "Unit tests fail"
+        stage ('Run tests for master branch') { 
+          when { branch: master }
+          steps { 
+            container('gradle') {
+              sh '''cd Chapter08/sample1
+                    chmod +x gradlew      
+                    ./gradlew test
+                    ./gradlew jacocoTestCoverageVerification
+                    ./gradlew jacocoTestReport
+                    ./gradlew checkstylemaster
+                ''' 
+              publishHTML (
+                target: [
+                  reportDir: 'Chapter08/sample1/build/reports/jacoco/test/html',
+                  reportFiles: 'index.html',
+                  reportName: 'JaCoCo Report'
+                ]
+              )
+              publishHTML (
+                target: [
+                  reportDir: 'Chapter08/sample1/build/reports/checkstyle',
+                  reportFiles: 'master.html',
+                  reportName: 'CheckStyle Report'
+                ]
+              )
+              try {
+                sh '''./gradlew test'''
+              } catch(all) {
+                  echo "Unit tests fail"
+              }
             }
           }
         }
-      }
-      stage('Build jar') {
-        steps {
-        sh """
-              ./gradlew build
-              ls -l ./build/libs
-              mv ./build/libs/calulator-0.0.1-SNAPSHOT.jar /mnt/calculator_${env.BRANCH_NAME}.jar
-              ls -l /mnt
-           """
+        stage('Build jar') {
+          steps {
+          sh """
+                ./gradlew build
+                ls -l ./build/libs
+                mv ./build/libs/calulator-0.0.1-SNAPSHOT.jar /mnt/calculator_${env.BRANCH_NAME}.jar
+                ls -l /mnt
+            """
+          }
         }
-      }
-    }      
+      }      
+    }
     stage('create container image and push to docker hub') {
       stage('Operations for master branch'){
         when {branch: master}
