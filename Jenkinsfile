@@ -67,7 +67,7 @@ pipeline {
                 echo 'COPY ./calculator_${env.BRANCH_NAME}.jar app.jar' >> Dockerfile
                 echo 'ENTRYPOINT ["java", "-jar", "app.jar"]' >> Dockerfile
                 cat Dockerfile
-
+                ls -l /mnt
                 cp /mnt/calculator_${env.BRANCH_NAME}.jar .
                 pwd
                 ls -l
