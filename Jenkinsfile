@@ -41,6 +41,16 @@ pipeline {
             }
           }
         }
+        stage('run operations for feature branch') {
+          when (branch 'feature')
+          steps {
+              sh '''cd Chapter08/sample1
+                    chmod +x gradlew      
+                    ./gradlew test
+                    ./gradlew checkstyleMain
+                '''          
+          }
+        }
         stage('Build jar') {
           steps {
             container('gradle') {
