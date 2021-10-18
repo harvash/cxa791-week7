@@ -1,158 +1,111 @@
-podTemplate(yaml: '''
-  apiVersion: v1 
-  kind: Pod
-  spec:
-    containers:
-    - name: gradle
-      image: gradle:6.3-jdk14
-      command:
-      - sleep
-      args:
-      - 99d
-      volumeMounts:
-      - name: shared-storage
-        mountPath: /mnt
-    - name: kaniko
-      image: gcr.io/kaniko-project/executor:debug
-      command:
-      - sleep
-      args:
-      - 9999999
-      volumeMounts:
-      - name: shared-storage
-        mountPath: /mnt
-      - name: kaniko-secret
-        mountPath: /kaniko/.docker
-    - name: calculator-feature
-      image: harvash/calculator:0.1
-      imagePullPolicy: Always
-      ports:
-      - containerPort: 8080
-      resources:
-        limits:
-          cpu: 500m
-          memory: 500Mi
-        requests:
-          cpu: 100m
-          memory: 256Mi
-    - name: calculator-master
-      image: harvash/calculator:1.0
-      imagePullPolicy: Always
-      ports:
-      - containerPort: 8080
-      resources:
-        limits:
-          cpu: 500m
-          memory: 500Mi
-        requests:
-          cpu: 100m
-          memory: 256Mi
-    restartPolicy: Never
-    volumes:
-    - name: shared-storage
-      persistentVolumeClaim:
-        claimName: kaniko-pv-claim
-    - name: kaniko-secret
-      secret:
-        secretName: dockercred
-        items:
-        - key: .dockerconfigjson
-          path: config.json'''
-)  {
-  node(POD_LABEL) {
-    stage('Run pipeline against a gradle project') {
-      git branch: env.BRANCH_NAME, url:'https://github.com/harvash/cxa791-week_6.git'
-      container('gradle') {
-        stage('Build a gradle project') {
-          
-          sh '''cd Chapter08/sample1
-                chmod +x gradlew '''
-          
-          if (env.BRANCH_NAME == 'master') {
-            sh '''cd Chapter08/sample1
-                  ./gradlew test''' 
-          }
-        }
-        stage('Code coverage') {
-          if (env.BRANCH_NAME == 'master') {
-            sh '''pwd
-                  cd Chapter08/sample1
-                  ./gradlew jacocoTestCoverageVerification
-                  ./gradlew jacocoTestReport'''
-            publishHTML (
-              target: [
-                reportDir: 'Chapter08/sample1/build/reports/jacoco/test/html',
-                reportFiles: 'index.html',
-                reportName: 'JaCoCo Report'
-              ]
-            )
-          }
-        }
-        stage('Checkstyle') {
-          if (env.BRANCH_NAME == 'feature') {
-            try {
-              sh '''pwd
-                    cd Chapter08/sample1
-                    ./gradlew checkstylemaster'''
-            } catch(all) {
-                echo "checkstyle fails"
+pipeline {
+  agent {
+    kubernetes {
+      yamlFile 'agents.yaml'
+    }
+  }
+  stages {
+    stage('Checkout SCM') {
+      steps {
+        git branch: env.BRANCH_NAME, url:'https://github.com/harvash/cxa791-week7.git'
+      }
+    }
+    stage('Test & Build Java code'){
+      stages {
+        stage ('Run tests for master branch') { 
+          when { branch 'master' }
+          steps { 
+            container('gradle') {
+              sh '''cd Chapter08/sample1
+                    chmod +x gradlew      
+                    ./gradlew test
+                    ./gradlew jacocoTestCoverageVerification
+                    ./gradlew jacocoTestReport
+                    ./gradlew checkstyleMain
+                ''' 
+              publishHTML (
+                target: [
+                  reportDir: 'Chapter08/sample1/build/reports/jacoco/test/html/',
+                  reportFiles: 'index.html',
+                  reportName: 'JaCoCo Report'
+                ]
+              )
+              publishHTML (
+                target: [
+                  reportDir: 'Chapter08/sample1/build/reports/checkstyle/',
+                  reportFiles: 'master.html',
+                  reportName: 'CheckStyle Report'
+                ]
+              )
+
             }
-            publishHTML (
-              target: [
-                reportDir: 'Chapter08/sample1/build/reports/checkstyle',
-                reportFiles: 'master.html',
-                reportName: 'CheckStyle Report'
-              ]
-            )
           }
         }
-        stage('Unit_test') {
-          if (env.BRANCH_NAME == 'feature') {
-            try {
-              sh '''pwd
-                    cd Chapter08/sample1
-                    ./gradlew test'''
-            } catch(all) {
-                echo "Unit tests fail"
-            }
+        stage('run operations for feature branch') {
+          when {branch 'feature'}
+          steps {
+              sh '''cd Chapter08/sample1
+                    chmod +x gradlew      
+                    ./gradlew test
+                    ./gradlew checkstyleMain
+                '''          
           }
         }
         stage('Build jar') {
-          sh """pwd
-                cd Chapter08/sample1
-                chmod +x gradlew
-                ./gradlew build
-                ls -l ./build/libs
-                mv ./build/libs/calulator-0.0.1-SNAPSHOT.jar /mnt/calculator_${env.BRANCH_NAME}.jar
-                ls -l /mnt"""
+          steps {
+            container('gradle') {
+              sh """
+                    cd Chapter08/sample1
+                    ls -l
+                    ./gradlew build
+                    ls -l ./build/libs
+                    mv ./build/libs/calculator-0.0.1-SNAPSHOT.jar /mnt                       
+                    ls -l /mnt
+                """
+            }
+          }
         }
       }
-    }
-    stage('Build Java Image') {
-      container('kaniko') {
-        stage('Build a gradle project') {
-          if (env.BRANCH_NAME == 'feature' || env.BRANCH_NAME == 'master') {
-            sh """echo 'FROM openjdk:8-jre' > Dockerfile
-                  echo 'COPY ./calculator_${env.BRANCH_NAME}.jar app.jar' >> Dockerfile
+    }  
+    stage('create container image and push to docker hub') {
+      stages {
+        stage('build Dockerfile'){
+          steps{
+            container('kaniko') {
+              sh """
+                  echo 'FROM openjdk:8-jre' > Dockerfile
+                  echo 'COPY ./calculator-0.0.1-SNAPSHOT.jar  app.jar' >> Dockerfile
                   echo 'ENTRYPOINT ["java", "-jar", "app.jar"]' >> Dockerfile
                   cat Dockerfile
                   ls -l /mnt
-                  cp /mnt/calculator_${env.BRANCH_NAME}.jar .
+                  cp /mnt/calculator-0.0.1-SNAPSHOT.jar  .
                   pwd
-                  ls -al
-                  if ["${env.BRANCH_NAME}" == "master" ]; then
-                    /kaniko/executor --context `pwd` --destination harvash/calculator:1.0
-                  else
-                    /kaniko/executor --context `pwd` --destination harvash/calculator-feature:0.1
-                  fi
-                  """
+                  ls -l
+                  
+                """
+            }
           }
         }
-      } 
-    }
-    stage('Deploy Calculator jar') {
-      container('calculator'){
-
+        stage('Operations for master branch'){
+          when {branch 'master'}
+          steps{
+            container('kaniko') {
+              sh  """
+                  /kaniko/executor --context `pwd` --destination harvash/calculator:1.0
+                  """
+            }
+          }
+        }
+        stage('Operations for feature branch'){
+          when {branch 'feature'}
+          steps{
+            container('kaniko') {
+              sh  """
+                  /kaniko/executor --context `pwd` --destination harvash/calculator:0.1
+                  """
+            }
+          }
+        }
       }
     }
   }

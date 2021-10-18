@@ -1,0 +1,49 @@
+apiVersion: v1 
+kind: Pod
+spec:
+  containers:
+  - name: gradle
+    image: gradle:6.3-jdk14
+    command:
+    - sleep
+    args:
+    - 99d
+    resources:
+      limits:
+        cpu: 500m
+        memory: 1000M
+      requests:
+        cpu: 100m
+        memory: 512M
+    volumeMounts:
+    - name: shared-storage
+      mountPath: /mnt
+  - name: kaniko
+    image: gcr.io/kaniko-project/executor:debug
+    command:
+    - sleep
+    args:
+    - '9999999'
+    volumeMounts:
+    - name: shared-storage
+      mountPath: /mnt
+    - name: kaniko-secret
+      mountPath: /kaniko/.docker
+    resources:
+      limits:
+        cpu: 500m
+        memory: 500M
+      requests:
+        cpu: 100m
+        memory: 256M
+  restartPolicy: Never
+  volumes:
+  - name: shared-storage
+    persistentVolumeClaim:
+      claimName: kaniko-pv-claim
+  - name: kaniko-secret
+    secret:
+      secretName: dockercred
+      items:
+      - key: .dockerconfigjson
+        path: config.json
